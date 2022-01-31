@@ -1,0 +1,20 @@
+[package]
+name = "get_len_base_10_as_usize_macros"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+get_len_base_10_as_usize = "0.1.1"
+is_signed_trait = "0.1.0"
+midpoint = "0.1.2"
+
+[lib]
+proc-macro = true
+
+[features]
+all = ["const_trait_impl", "unchecked_math", "const_inherent_unchecked_arith"]
+const_trait_impl = ["midpoint/const_trait_impl"]
+unchecked_math = ["midpoint/unchecked_math"]
+const_inherent_unchecked_arith = ["midpoint/const_inherent_unchecked_arith"]
