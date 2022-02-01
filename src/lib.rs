@@ -6,6 +6,7 @@
 use get_len_base_10_as_usize::MaxLenBase10AsUsize;
 use is_signed_trait::IsSigned;
 use proc_macro::TokenStream;
+use proc_macro2::TokenTree as TokenTree2;
 use quote::quote;
 
 macro_rules! get_is_signed_and_max_len {
@@ -23,27 +24,29 @@ macro_rules! get_is_signed_and_max_len {
 }
 
 #[cfg(any(doc, test, doctest, feature = "const_trait_impl"))]
-fn get_implementation_for_unsigned(type_ts: &TokenStream, 
+fn get_implementation_for_unsigned(type_token: &TokenTree2, 
     lengths: &Vec<usize>,
     smallest_numbers_with_corresponding_lengths: &Vec<usize>
 ) -> TokenStream {
     quote! {
-        impl const GetLenBase10AsUsizeViaDivigingWithPowsOf2 {
+        impl const GetLenBase10AsUsizeViaDivigingWithPowsOf2 for #type_token {
             fn get_len_base_10_as_usize_via_dividing_with_pows_of_2(&self) -> usize {
-                let number: Self = *self;
-                let length = 1usize;
+                let mut number: Self = *self;
+                let mut length = 1usize;
                 #(
                     if (number >= #smallest_numbers_with_corresponding_lengths) {
-                        
+                        length += #lengths;
+                        number /= #smallest_numbers_with_corresponding_lengths;
                     }
                 )*
+                length
             }
         }
     }.into()
 }
 
 #[cfg(not(any(doc, test, doctest, feature = "const_trait_impl")))]
-fn get_implementation_for_unsigned(type_ts: &TokenStream, 
+fn get_implementation_for_unsigned(type_token: &TokenTree2, 
     lengths: &Vec<usize>,
     smallest_numbers_with_corresponding_lengths: &Vec<usize>
 ) -> TokenStream {
@@ -56,7 +59,7 @@ fn get_implementation_for_unsigned(type_ts: &TokenStream,
 }
 
 #[cfg(any(doc, test, doctest, feature = "const_trait_impl"))]
-fn get_implementation_for_signed(type_ts: &TokenStream, 
+fn get_implementation_for_signed(type_token: &TokenTree2, 
     lengths: &Vec<usize>,
     smallest_numbers_with_corresponding_lengths: &Vec<usize>
 ) -> TokenStream {
@@ -69,7 +72,7 @@ fn get_implementation_for_signed(type_ts: &TokenStream,
 }
 
 #[cfg(not(any(doc, test, doctest, feature = "const_trait_impl")))]
-fn get_implementation_for_signed(type_ts: &TokenStream, 
+fn get_implementation_for_signed(type_token: &TokenTree2, 
     lengths: &Vec<usize>,
     smallest_numbers_with_corresponding_lengths: &Vec<usize>
 ) -> TokenStream {
@@ -84,9 +87,10 @@ fn get_implementation_for_signed(type_ts: &TokenStream,
 
 #[proc_macro]
 pub fn impl_get_len_base_10_as_usize_via_dividing_with_pows_of_2(ts: TokenStream) -> TokenStream {
+    let ts = proc_macro2::TokenStream::from(ts);
     let type_name = ts.clone().to_string();
     let (is_signed, max_len): (bool, usize) = get_is_signed_and_max_len!(type_name in @PRIM_INTS);
-    let type_ts = ts;
+    let type_token: TokenTree2 = ts.into_iter().next().unwrap().into();
     let max_exponent_of_2: u32 = (1u32..)
         .map(|exponent_of_2| 2usize.pow(exponent_of_2))
         // TODO: verify correctness
@@ -98,10 +102,10 @@ pub fn impl_get_len_base_10_as_usize_via_dividing_with_pows_of_2(ts: TokenStream
         .map(|power_of_2| (power_of_2 as usize, 10usize.pow(power_of_2)))
         .unzip::<usize, usize, Vec<_>, Vec<_>>();
     if is_signed {
-        get_implementation_for_signed(&type_ts, &lengths, &smallest_numbers_with_corresponding_lengths)
+        get_implementation_for_signed(&type_token, &lengths, &smallest_numbers_with_corresponding_lengths)
     }
     else {
-        get_implementation_for_unsigned(&type_ts, &lengths, &smallest_numbers_with_corresponding_lengths)
+        get_implementation_for_unsigned(&type_token, &lengths, &smallest_numbers_with_corresponding_lengths)
     }
 }
 
