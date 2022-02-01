@@ -75,6 +75,16 @@ fn get_implementation_for_signed(type_token: &TokenTree2,
     quote! {
         impl const GetLenBase10AsUsizeViaDivigingWithPowsOf2 {
             fn get_len_base_10_as_usize_via_dividing_with_pows_of_2(&self) -> usize {
+                let number: Self = *Self;
+                let mut length: usize = if number < 0 { 2 } else { 1 };
+                let mut neg_abs = number.wrapping_abs().wrapping_neg();
+                #(
+                    if (neg_abs >= (#smallest_numbers_with_corresponding_lengths as #type_token)) {
+                        length += #lengths;
+                        neg_abs /= (#smallest_numbers_with_corresponding_lengths as #type_token);
+                    }
+                )*
+                length
             }
         }
     }.into()
@@ -88,12 +98,23 @@ fn get_implementation_for_signed(type_token: &TokenTree2,
     quote! {
         impl const GetLenBase10AsUsizeViaDivigingWithPowsOf2 {
             fn get_len_base_10_as_usize_via_dividing_with_pows_of_2(&self) {
-
+                let number: Self = *Self;
+                let mut length: usize = if number < 0 { 2 } else { 1 };
+                let mut neg_abs = number.wrapping_abs().wrapping_neg();
+                #(
+                    if (neg_abs >= (#smallest_numbers_with_corresponding_lengths as #type_token)) {
+                        length += #lengths;
+                        neg_abs /= (#smallest_numbers_with_corresponding_lengths as #type_token);
+                    }
+                )*
+                length
             }
         }
     }.into()
 }
 
+// Bulk approach would make the macro considerably more efficient, yet it would make
+// implementing the trait for non-primitive types harder
 #[proc_macro]
 pub fn impl_get_len_base_10_as_usize_via_dividing_with_pows_of_2(ts: TokenStream) -> TokenStream {
     let ts = proc_macro2::TokenStream::from(ts);
