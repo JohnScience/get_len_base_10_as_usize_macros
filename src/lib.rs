@@ -51,8 +51,17 @@ fn get_implementation_for_unsigned(type_token: &TokenTree2,
     smallest_numbers_with_corresponding_lengths: &Vec<usize>
 ) -> TokenStream {
     quote! {
-        impl const GetLenBase10AsUsizeViaDivigingWithPowsOf2 {
-            fn get_len_base_10_as_usize_via_dividing_with_pows_of_2(&self) {
+        impl GetLenBase10AsUsizeViaDivigingWithPowsOf2 for #type_token {
+            fn get_len_base_10_as_usize_via_dividing_with_pows_of_2(&self) -> usize {
+                let mut number: Self = *self;
+                let mut length = 1usize;
+                #(
+                    if (number >= #smallest_numbers_with_corresponding_lengths) {
+                        length += #lengths;
+                        number /= #smallest_numbers_with_corresponding_lengths;
+                    }
+                )*
+                length
             }
         }
     }.into()
