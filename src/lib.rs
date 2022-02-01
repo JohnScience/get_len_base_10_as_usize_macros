@@ -34,9 +34,9 @@ fn get_implementation_for_unsigned(type_token: &TokenTree2,
                 let mut number: Self = *self;
                 let mut length = 1usize;
                 #(
-                    if (number >= #smallest_numbers_with_corresponding_lengths) {
+                    if (number >= (#smallest_numbers_with_corresponding_lengths as #type_token)) {
                         length += #lengths;
-                        number /= #smallest_numbers_with_corresponding_lengths;
+                        number /= (#smallest_numbers_with_corresponding_lengths as #type_token);
                     }
                 )*
                 length
@@ -56,9 +56,9 @@ fn get_implementation_for_unsigned(type_token: &TokenTree2,
                 let mut number: Self = *self;
                 let mut length = 1usize;
                 #(
-                    if (number >= #smallest_numbers_with_corresponding_lengths) {
+                    if (number >= (#smallest_numbers_with_corresponding_lengths as #type_token)) {
                         length += #lengths;
-                        number /= #smallest_numbers_with_corresponding_lengths;
+                        number /= (#smallest_numbers_with_corresponding_lengths as #type_token);
                     }
                 )*
                 length
@@ -105,7 +105,7 @@ pub fn impl_get_len_base_10_as_usize_via_dividing_with_pows_of_2(ts: TokenStream
         // TODO: verify correctness
         .take_while(|power_of_2| *power_of_2 < max_len)
         .count() as u32;
-    let (lengths, smallest_numbers_with_corresponding_lengths) = (1u32..max_exponent_of_2)
+    let (lengths, smallest_numbers_with_corresponding_lengths) = (0u32..max_exponent_of_2)
         .rev()
         .map(|exponent_of_2| 2u32.pow(exponent_of_2))
         .map(|power_of_2| (power_of_2 as usize, 10usize.pow(power_of_2)))
