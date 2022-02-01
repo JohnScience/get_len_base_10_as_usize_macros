@@ -9,6 +9,7 @@ edition = "2021"
 get_len_base_10_as_usize = "0.1.1"
 is_signed_trait = "0.1.0"
 midpoint = "0.1.2"
+quote = "1.0.15"
 
 [lib]
 proc-macro = true

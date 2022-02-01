@@ -1,27 +1,108 @@
-use proc_macro::TokenStream;
-use is_signed_trait::IsSigned;
+#![cfg_attr(
+    any(doc, test, doctest, feature = "const_trait_impl"),
+    feature(const_trait_impl)
+)]
+
 use get_len_base_10_as_usize::MaxLenBase10AsUsize;
+use is_signed_trait::IsSigned;
+use proc_macro::TokenStream;
+use quote::quote;
+
+macro_rules! get_is_signed_and_max_len {
+    ($type_name:ident in @PRIM_INTS) => {
+        get_is_signed_and_max_len!($type_name in [u8,u16,u32,u64,u128,usize,i8,i16,i32,i64,i128,isize])
+    };
+    ($type_name:ident in [$($t:ty),+]) => {
+        match $type_name.as_str() {
+            $(
+                stringify!($t) => (<$t>::IS_SIGNED, <$t>::MAX_LEN_BASE_10_AS_USIZE),
+            )+
+            _ => panic!("unexpected type"),
+        }
+    };
+}
+
+#[cfg(any(doc, test, doctest, feature = "const_trait_impl"))]
+fn get_implementation_for_unsigned(type_ts: &TokenStream, 
+    lengths: &Vec<usize>,
+    smallest_numbers_with_corresponding_lengths: &Vec<usize>
+) -> TokenStream {
+    quote! {
+        impl const GetLenBase10AsUsizeViaDivigingWithPowsOf2 {
+            fn get_len_base_10_as_usize_via_dividing_with_pows_of_2(&self) -> usize {
+                let number: Self = *self;
+                let length = 1usize;
+                #(
+                    if (number >= #smallest_numbers_with_corresponding_lengths) {
+                        
+                    }
+                )*
+            }
+        }
+    }.into()
+}
+
+#[cfg(not(any(doc, test, doctest, feature = "const_trait_impl")))]
+fn get_implementation_for_unsigned(type_ts: &TokenStream, 
+    lengths: &Vec<usize>,
+    smallest_numbers_with_corresponding_lengths: &Vec<usize>
+) -> TokenStream {
+    quote! {
+        impl const GetLenBase10AsUsizeViaDivigingWithPowsOf2 {
+            fn get_len_base_10_as_usize_via_dividing_with_pows_of_2(&self) {
+            }
+        }
+    }.into()
+}
+
+#[cfg(any(doc, test, doctest, feature = "const_trait_impl"))]
+fn get_implementation_for_signed(type_ts: &TokenStream, 
+    lengths: &Vec<usize>,
+    smallest_numbers_with_corresponding_lengths: &Vec<usize>
+) -> TokenStream {
+    quote! {
+        impl const GetLenBase10AsUsizeViaDivigingWithPowsOf2 {
+            fn get_len_base_10_as_usize_via_dividing_with_pows_of_2(&self) -> usize {
+            }
+        }
+    }.into()
+}
+
+#[cfg(not(any(doc, test, doctest, feature = "const_trait_impl")))]
+fn get_implementation_for_signed(type_ts: &TokenStream, 
+    lengths: &Vec<usize>,
+    smallest_numbers_with_corresponding_lengths: &Vec<usize>
+) -> TokenStream {
+    quote! {
+        impl const GetLenBase10AsUsizeViaDivigingWithPowsOf2 {
+            fn get_len_base_10_as_usize_via_dividing_with_pows_of_2(&self) {
+
+            }
+        }
+    }.into()
+}
 
 #[proc_macro]
 pub fn impl_get_len_base_10_as_usize_via_dividing_with_pows_of_2(ts: TokenStream) -> TokenStream {
-    let type_name = ts.to_string();
-    let (is_signed, max_len): (bool, usize) = match type_name.as_str() {
-        "u8" => (u8::IS_SIGNED, u8::MAX_LEN_BASE_10_AS_USIZE),
-        "u16" => (u16::IS_SIGNED, u16::MAX_LEN_BASE_10_AS_USIZE),
-        "u32" => (u32::IS_SIGNED, u32::MAX_LEN_BASE_10_AS_USIZE),
-        "u64" => (u64::IS_SIGNED, u64::MAX_LEN_BASE_10_AS_USIZE),
-        "u128" => (u128::IS_SIGNED, u128::MAX_LEN_BASE_10_AS_USIZE),
-        "usize" => (usize::IS_SIGNED, usize::MAX_LEN_BASE_10_AS_USIZE),
-        "i8" => (i8::IS_SIGNED, i8::MAX_LEN_BASE_10_AS_USIZE),
-        "i16" => (i16::IS_SIGNED, i16::MAX_LEN_BASE_10_AS_USIZE),
-        "i32" => (i32::IS_SIGNED, i32::MAX_LEN_BASE_10_AS_USIZE),
-        "i64" => (i64::IS_SIGNED, i64::MAX_LEN_BASE_10_AS_USIZE),
-        "i128" => (i128::IS_SIGNED, i128::MAX_LEN_BASE_10_AS_USIZE),
-        "isize" => (isize::IS_SIGNED, isize::MAX_LEN_BASE_10_AS_USIZE),
-        _ => panic!("unexpected type"),
-    };
-    // 0..255
-    unimplemented!();
+    let type_name = ts.clone().to_string();
+    let (is_signed, max_len): (bool, usize) = get_is_signed_and_max_len!(type_name in @PRIM_INTS);
+    let type_ts = ts;
+    let max_exponent_of_2: u32 = (1u32..)
+        .map(|exponent_of_2| 2usize.pow(exponent_of_2))
+        // TODO: verify correctness
+        .take_while(|power_of_2| *power_of_2 < max_len)
+        .count() as u32;
+    let (lengths, smallest_numbers_with_corresponding_lengths) = (1u32..max_exponent_of_2)
+        .rev()
+        .map(|exponent_of_2| 2u32.pow(exponent_of_2))
+        .map(|power_of_2| (power_of_2 as usize, 10usize.pow(power_of_2)))
+        .unzip::<usize, usize, Vec<_>, Vec<_>>();
+    if is_signed {
+        get_implementation_for_signed(&type_ts, &lengths, &smallest_numbers_with_corresponding_lengths)
+    }
+    else {
+        get_implementation_for_unsigned(&type_ts, &lengths, &smallest_numbers_with_corresponding_lengths)
+    }
 }
 
 #[cfg(test)]
