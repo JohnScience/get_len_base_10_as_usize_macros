@@ -3,7 +3,7 @@
     feature(const_trait_impl)
 )]
 
-use get_len_base_10_as_usize::MaxLenBase10AsUsize;
+use max_len_base_10_as_usize::MaxLenBase10AsUsize;
 use is_signed_trait::IsSigned;
 use proc_macro::TokenStream;
 use proc_macro2::TokenTree as TokenTree2;
