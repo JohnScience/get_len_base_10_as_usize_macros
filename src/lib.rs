@@ -31,7 +31,7 @@ macro_rules! get_is_signed_and_max_len_wo_sign {
 }
 
 #[cfg(any(doc, test, doctest, feature = "const_trait_impl"))]
-fn get_implementation_via_pows_ot_2_for_unsigned(
+fn get_implementation_via_pows_of_2_for_unsigned(
     type_token: &TokenTree2,
     lengths: &Vec<usize>,
     smallest_numbers_with_corresponding_lengths: &Vec<u128>,
@@ -55,7 +55,7 @@ fn get_implementation_via_pows_ot_2_for_unsigned(
 }
 
 #[cfg(not(any(doc, test, doctest, feature = "const_trait_impl")))]
-fn get_implementation_via_pows_ot_2_for_unsigned(
+fn get_implementation_via_pows_of_2_for_unsigned(
     type_token: &TokenTree2,
     lengths: &Vec<usize>,
     smallest_numbers_with_corresponding_lengths: &Vec<u128>,
@@ -79,7 +79,7 @@ fn get_implementation_via_pows_ot_2_for_unsigned(
 }
 
 #[cfg(any(doc, test, doctest, feature = "const_trait_impl"))]
-fn get_implementation_via_pows_ot_2_for_signed(
+fn get_implementation_via_pows_of_2_for_signed(
     type_token: &TokenTree2,
     lengths: &Vec<usize>,
     smallest_numbers_with_corresponding_lengths: &Vec<u128>,
@@ -103,7 +103,7 @@ fn get_implementation_via_pows_ot_2_for_signed(
 }
 
 #[cfg(not(any(doc, test, doctest, feature = "const_trait_impl")))]
-fn get_implementation_via_pows_ot_2_for_signed(
+fn get_implementation_via_pows_of_2_for_signed(
     type_token: &TokenTree2,
     lengths: &Vec<usize>,
     smallest_numbers_with_corresponding_lengths: &Vec<u128>,
@@ -156,13 +156,13 @@ pub fn impl_get_len_base_10_as_usize_via_dividing_with_pows_of_2(ts: TokenStream
     let (lens, smallest_nums_with_corresponding_lens) =
         make_lens_and_smallest_nums_with_corresponding_lens_pair(&max_exponent_of_2);
     if is_signed {
-        get_implementation_via_pows_ot_2_for_signed(
+        get_implementation_via_pows_of_2_for_signed(
             &type_token,
             &lens,
             &smallest_nums_with_corresponding_lens,
         )
     } else {
-        get_implementation_via_pows_ot_2_for_unsigned(
+        get_implementation_via_pows_of_2_for_unsigned(
             &type_token,
             &lens,
             &smallest_nums_with_corresponding_lens,
