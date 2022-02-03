@@ -126,6 +126,13 @@ fn get_implementation_via_pows_ot_2_for_signed(
     }.into()
 }
 
+fn get_max_exponent_of_2_leq_max_len_wo_sign(max_len_wo_sign: &usize) -> u32 {
+    (0u32..)
+        .map(|exponent_of_2| 2usize.pow(exponent_of_2))
+        .take_while(|power_of_2| power_of_2 <= max_len_wo_sign)
+        .count() as u32
+}
+
 // Bulk approach would make the macro considerably more efficient, yet it would make
 // implementing the trait for non-primitive types harder
 #[proc_macro]
@@ -135,11 +142,7 @@ pub fn impl_get_len_base_10_as_usize_via_dividing_with_pows_of_2(ts: TokenStream
     let (is_signed, max_len_wo_sign): (bool, usize) =
         get_is_signed_and_max_len_wo_sign!(type_name in @PRIM_INTS);
     let type_token: TokenTree2 = ts.into_iter().next().unwrap().into();
-    let max_exponent_of_2: u32 = (0u32..)
-        .map(|exponent_of_2| 2usize.pow(exponent_of_2))
-        // TODO: verify correctness
-        .take_while(|power_of_2| *power_of_2 < max_len_wo_sign)
-        .count() as u32;
+    let max_exponent_of_2: u32 = get_max_exponent_of_2_leq_max_len_wo_sign(&max_len_wo_sign);
     let (lengths, smallest_nums_with_corresponding_lengths) = (0u32..max_exponent_of_2)
         .rev()
         .map(|exponent_of_2| 2u32.pow(exponent_of_2))
