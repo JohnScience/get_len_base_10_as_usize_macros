@@ -96,7 +96,7 @@ fn get_implementation_for_signed(type_token: &TokenTree2,
     smallest_numbers_with_corresponding_lengths: &Vec<usize>
 ) -> TokenStream {
     quote! {
-        impl const GetLenBase10AsUsizeViaDivigingWithPowsOf2 {
+        impl GetLenBase10AsUsizeViaDivigingWithPowsOf2 {
             fn get_len_base_10_as_usize_via_dividing_with_pows_of_2(&self) {
                 let number: Self = *Self;
                 let mut length: usize = if number < 0 { 2 } else { 1 };
