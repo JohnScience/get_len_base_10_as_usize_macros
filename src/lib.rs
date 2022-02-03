@@ -128,7 +128,7 @@ pub fn impl_get_len_base_10_as_usize_via_dividing_with_pows_of_2(ts: TokenStream
     let type_name = ts.clone().to_string();
     let (is_signed, max_len_wo_sign): (bool, usize) = get_is_signed_and_max_len_wo_sign!(type_name in @PRIM_INTS);
     let type_token: TokenTree2 = ts.into_iter().next().unwrap().into();
-    let max_exponent_of_2: u32 = (1u32..)
+    let max_exponent_of_2: u32 = (0u32..)
         .map(|exponent_of_2| 2usize.pow(exponent_of_2))
         // TODO: verify correctness
         .take_while(|power_of_2| *power_of_2 < max_len_wo_sign)
