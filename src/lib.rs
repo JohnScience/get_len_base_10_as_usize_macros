@@ -133,6 +133,16 @@ fn get_max_exponent_of_2_leq_max_len_wo_sign(max_len_wo_sign: &usize) -> u32 {
         .count() as u32
 }
 
+fn get_lens_and_smallest_nums_with_corresponding_lens_pair(
+    max_exponent_of_2: &u32,
+) -> (Vec<usize>, Vec<u128>) {
+    (0u32..*max_exponent_of_2)
+        .rev()
+        .map(|exponent_of_2| 2u32.pow(exponent_of_2))
+        .map(|power_of_2| (power_of_2 as usize, 10u128.pow(power_of_2)))
+        .unzip::<usize, u128, Vec<_>, Vec<_>>()
+}
+
 // Bulk approach would make the macro considerably more efficient, yet it would make
 // implementing the trait for non-primitive types harder
 #[proc_macro]
@@ -143,22 +153,19 @@ pub fn impl_get_len_base_10_as_usize_via_dividing_with_pows_of_2(ts: TokenStream
         get_is_signed_and_max_len_wo_sign!(type_name in @PRIM_INTS);
     let type_token: TokenTree2 = ts.into_iter().next().unwrap().into();
     let max_exponent_of_2: u32 = get_max_exponent_of_2_leq_max_len_wo_sign(&max_len_wo_sign);
-    let (lengths, smallest_nums_with_corresponding_lengths) = (0u32..max_exponent_of_2)
-        .rev()
-        .map(|exponent_of_2| 2u32.pow(exponent_of_2))
-        .map(|power_of_2| (power_of_2 as usize, 10u128.pow(power_of_2)))
-        .unzip::<usize, u128, Vec<_>, Vec<_>>();
+    let (lens, smallest_nums_with_corresponding_lens) =
+        get_lens_and_smallest_nums_with_corresponding_lens_pair(&max_exponent_of_2);
     if is_signed {
         get_implementation_via_pows_ot_2_for_signed(
             &type_token,
-            &lengths,
-            &smallest_nums_with_corresponding_lengths,
+            &lens,
+            &smallest_nums_with_corresponding_lens,
         )
     } else {
         get_implementation_via_pows_ot_2_for_unsigned(
             &type_token,
-            &lengths,
-            &smallest_nums_with_corresponding_lengths,
+            &lens,
+            &smallest_nums_with_corresponding_lens,
         )
     }
 }
