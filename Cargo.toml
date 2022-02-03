@@ -1,6 +1,6 @@
 [package]
 name = "get_len_base_10_as_usize_macros"
-version = "0.1.5"
+version = "0.1.6"
 edition = "2021"
 description = "Macros for `get_len_base_10_as_usize` crate"
 license = "MIT OR Apache-2.0"
