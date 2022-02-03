@@ -3,8 +3,8 @@
     feature(const_trait_impl)
 )]
 
-use max_len_base_10_as_usize::MaxLenBase10AsUsize;
 use is_signed_trait::IsSigned;
+use max_len_base_10_as_usize::MaxLenBase10AsUsize;
 use proc_macro::TokenStream;
 use proc_macro2::TokenTree as TokenTree2;
 use quote::quote;
@@ -19,7 +19,7 @@ macro_rules! get_is_signed_and_max_len_wo_sign {
                 stringify!($t) => (
                     <$t>::IS_SIGNED,
                     if <$t>::IS_SIGNED {
-                        <$t>::MAX_LEN_BASE_10_AS_USIZE - 1 
+                        <$t>::MAX_LEN_BASE_10_AS_USIZE - 1
                     } else {
                         <$t>::MAX_LEN_BASE_10_AS_USIZE
                     }
@@ -31,9 +31,10 @@ macro_rules! get_is_signed_and_max_len_wo_sign {
 }
 
 #[cfg(any(doc, test, doctest, feature = "const_trait_impl"))]
-fn get_implementation_for_unsigned(type_token: &TokenTree2, 
+fn get_implementation_via_pows_ot_2_for_unsigned(
+    type_token: &TokenTree2,
     lengths: &Vec<usize>,
-    smallest_numbers_with_corresponding_lengths: &Vec<u128>
+    smallest_numbers_with_corresponding_lengths: &Vec<u128>,
 ) -> TokenStream {
     quote! {
         impl const GetLenBase10AsUsizeViaDivigingWithPowsOf2 for #type_token {
@@ -49,13 +50,15 @@ fn get_implementation_for_unsigned(type_token: &TokenTree2,
                 length
             }
         }
-    }.into()
+    }
+    .into()
 }
 
 #[cfg(not(any(doc, test, doctest, feature = "const_trait_impl")))]
-fn get_implementation_for_unsigned(type_token: &TokenTree2, 
+fn get_implementation_via_pows_ot_2_for_unsigned(
+    type_token: &TokenTree2,
     lengths: &Vec<usize>,
-    smallest_numbers_with_corresponding_lengths: &Vec<u128>
+    smallest_numbers_with_corresponding_lengths: &Vec<u128>,
 ) -> TokenStream {
     quote! {
         impl GetLenBase10AsUsizeViaDivigingWithPowsOf2 for #type_token {
@@ -71,13 +74,15 @@ fn get_implementation_for_unsigned(type_token: &TokenTree2,
                 length
             }
         }
-    }.into()
+    }
+    .into()
 }
 
 #[cfg(any(doc, test, doctest, feature = "const_trait_impl"))]
-fn get_implementation_for_signed(type_token: &TokenTree2, 
+fn get_implementation_via_pows_ot_2_for_signed(
+    type_token: &TokenTree2,
     lengths: &Vec<usize>,
-    smallest_numbers_with_corresponding_lengths: &Vec<u128>
+    smallest_numbers_with_corresponding_lengths: &Vec<u128>,
 ) -> TokenStream {
     quote! {
         impl const GetLenBase10AsUsizeViaDivigingWithPowsOf2 for #type_token {
@@ -98,9 +103,10 @@ fn get_implementation_for_signed(type_token: &TokenTree2,
 }
 
 #[cfg(not(any(doc, test, doctest, feature = "const_trait_impl")))]
-fn get_implementation_for_signed(type_token: &TokenTree2, 
+fn get_implementation_via_pows_ot_2_for_signed(
+    type_token: &TokenTree2,
     lengths: &Vec<usize>,
-    smallest_numbers_with_corresponding_lengths: &Vec<u128>
+    smallest_numbers_with_corresponding_lengths: &Vec<u128>,
 ) -> TokenStream {
     quote! {
         impl GetLenBase10AsUsizeViaDivigingWithPowsOf2 for #type_token {
@@ -126,31 +132,30 @@ fn get_implementation_for_signed(type_token: &TokenTree2,
 pub fn impl_get_len_base_10_as_usize_via_dividing_with_pows_of_2(ts: TokenStream) -> TokenStream {
     let ts = proc_macro2::TokenStream::from(ts);
     let type_name = ts.clone().to_string();
-    let (is_signed, max_len_wo_sign): (bool, usize) = get_is_signed_and_max_len_wo_sign!(type_name in @PRIM_INTS);
+    let (is_signed, max_len_wo_sign): (bool, usize) =
+        get_is_signed_and_max_len_wo_sign!(type_name in @PRIM_INTS);
     let type_token: TokenTree2 = ts.into_iter().next().unwrap().into();
     let max_exponent_of_2: u32 = (0u32..)
         .map(|exponent_of_2| 2usize.pow(exponent_of_2))
         // TODO: verify correctness
         .take_while(|power_of_2| *power_of_2 < max_len_wo_sign)
         .count() as u32;
-    let (lengths, smallest_numbers_with_corresponding_lengths) = (0u32..max_exponent_of_2)
+    let (lengths, smallest_nums_with_corresponding_lengths) = (0u32..max_exponent_of_2)
         .rev()
         .map(|exponent_of_2| 2u32.pow(exponent_of_2))
         .map(|power_of_2| (power_of_2 as usize, 10u128.pow(power_of_2)))
         .unzip::<usize, u128, Vec<_>, Vec<_>>();
     if is_signed {
-        get_implementation_for_signed(&type_token, &lengths, &smallest_numbers_with_corresponding_lengths)
-    }
-    else {
-        get_implementation_for_unsigned(&type_token, &lengths, &smallest_numbers_with_corresponding_lengths)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        let result = 2 + 2;
-        assert_eq!(result, 4);
+        get_implementation_via_pows_ot_2_for_signed(
+            &type_token,
+            &lengths,
+            &smallest_nums_with_corresponding_lengths,
+        )
+    } else {
+        get_implementation_via_pows_ot_2_for_unsigned(
+            &type_token,
+            &lengths,
+            &smallest_nums_with_corresponding_lengths,
+        )
     }
 }
