@@ -33,7 +33,7 @@ macro_rules! get_is_signed_and_max_len_wo_sign {
 #[cfg(any(doc, test, doctest, feature = "const_trait_impl"))]
 fn get_implementation_for_unsigned(type_token: &TokenTree2, 
     lengths: &Vec<usize>,
-    smallest_numbers_with_corresponding_lengths: &Vec<usize>
+    smallest_numbers_with_corresponding_lengths: &Vec<u128>
 ) -> TokenStream {
     quote! {
         impl const GetLenBase10AsUsizeViaDivigingWithPowsOf2 for #type_token {
@@ -55,7 +55,7 @@ fn get_implementation_for_unsigned(type_token: &TokenTree2,
 #[cfg(not(any(doc, test, doctest, feature = "const_trait_impl")))]
 fn get_implementation_for_unsigned(type_token: &TokenTree2, 
     lengths: &Vec<usize>,
-    smallest_numbers_with_corresponding_lengths: &Vec<usize>
+    smallest_numbers_with_corresponding_lengths: &Vec<u128>
 ) -> TokenStream {
     quote! {
         impl GetLenBase10AsUsizeViaDivigingWithPowsOf2 for #type_token {
@@ -77,7 +77,7 @@ fn get_implementation_for_unsigned(type_token: &TokenTree2,
 #[cfg(any(doc, test, doctest, feature = "const_trait_impl"))]
 fn get_implementation_for_signed(type_token: &TokenTree2, 
     lengths: &Vec<usize>,
-    smallest_numbers_with_corresponding_lengths: &Vec<usize>
+    smallest_numbers_with_corresponding_lengths: &Vec<u128>
 ) -> TokenStream {
     quote! {
         impl const GetLenBase10AsUsizeViaDivigingWithPowsOf2 for #type_token {
@@ -100,7 +100,7 @@ fn get_implementation_for_signed(type_token: &TokenTree2,
 #[cfg(not(any(doc, test, doctest, feature = "const_trait_impl")))]
 fn get_implementation_for_signed(type_token: &TokenTree2, 
     lengths: &Vec<usize>,
-    smallest_numbers_with_corresponding_lengths: &Vec<usize>
+    smallest_numbers_with_corresponding_lengths: &Vec<u128>
 ) -> TokenStream {
     quote! {
         impl GetLenBase10AsUsizeViaDivigingWithPowsOf2 for #type_token {
@@ -136,8 +136,8 @@ pub fn impl_get_len_base_10_as_usize_via_dividing_with_pows_of_2(ts: TokenStream
     let (lengths, smallest_numbers_with_corresponding_lengths) = (0u32..max_exponent_of_2)
         .rev()
         .map(|exponent_of_2| 2u32.pow(exponent_of_2))
-        .map(|power_of_2| (power_of_2 as usize, 10usize.pow(power_of_2)))
-        .unzip::<usize, usize, Vec<_>, Vec<_>>();
+        .map(|power_of_2| (power_of_2 as usize, 10u128.pow(power_of_2)))
+        .unzip::<usize, u128, Vec<_>, Vec<_>>();
     if is_signed {
         get_implementation_for_signed(&type_token, &lengths, &smallest_numbers_with_corresponding_lengths)
     }
