@@ -133,7 +133,7 @@ fn get_max_exponent_of_2_leq_max_len_wo_sign(max_len_wo_sign: &usize) -> u32 {
         .count() as u32
 }
 
-fn get_lens_and_smallest_nums_with_corresponding_lens_pair(
+fn make_lens_and_smallest_nums_with_corresponding_lens_pair(
     max_exponent_of_2: &u32,
 ) -> (Vec<usize>, Vec<u128>) {
     (0u32..*max_exponent_of_2)
@@ -154,7 +154,7 @@ pub fn impl_get_len_base_10_as_usize_via_dividing_with_pows_of_2(ts: TokenStream
     let type_token: TokenTree2 = ts.into_iter().next().unwrap().into();
     let max_exponent_of_2: u32 = get_max_exponent_of_2_leq_max_len_wo_sign(&max_len_wo_sign);
     let (lens, smallest_nums_with_corresponding_lens) =
-        get_lens_and_smallest_nums_with_corresponding_lens_pair(&max_exponent_of_2);
+        make_lens_and_smallest_nums_with_corresponding_lens_pair(&max_exponent_of_2);
     if is_signed {
         get_implementation_via_pows_ot_2_for_signed(
             &type_token,
