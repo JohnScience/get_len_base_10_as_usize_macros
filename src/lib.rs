@@ -2,21 +2,14 @@
     any(doc, test, doctest, feature = "const_trait_impl"),
     feature(const_trait_impl)
 )]
-#![cfg_attr(
-    any(doc, test, doctest, feature = "const_fn_trait_bound"),
-    feature(const_fn_trait_bound)
-)]
 
 use is_signed_trait::IsSigned;
 use max_len_base_10_as_usize::MaxLenBase10AsUsize;
 use midpoint::NaiveMidpointExt;
 use proc_macro::TokenStream;
 use proc_macro2::{
+    Ident as Ident2, Literal as Literal2, Span as Span2, TokenStream as TokenStream2,
     TokenTree as TokenTree2,
-    Literal as Literal2,
-    Ident as Ident2,
-    Span as Span2,
-    TokenStream as TokenStream2
 };
 use quote::quote;
 
@@ -37,7 +30,7 @@ macro_rules! impl_trait_for_sized_t {
     ($trait_name: ident, $macro_name: ident) => {
         impl<T: Sized> $trait_name for T {
             $macro_name!();
-        }  
+        }
     };
 }
 
@@ -174,10 +167,12 @@ fn make_lens_and_smallest_nums_with_corresponding_lens_pair(
         .rev()
         .map(|exponent_of_2| 2u32.pow(exponent_of_2))
         .map(|power_of_2| (power_of_2, 10u128.pow(power_of_2)))
-        .map(|(len, smallest_num_with_corresponding_len)| (
-            Literal2::u32_unsuffixed(len),
-            Literal2::u128_unsuffixed(smallest_num_with_corresponding_len)
-        ))
+        .map(|(len, smallest_num_with_corresponding_len)| {
+            (
+                Literal2::u32_unsuffixed(len),
+                Literal2::u128_unsuffixed(smallest_num_with_corresponding_len),
+            )
+        })
         .unzip::<Literal2, Literal2, Vec<_>, Vec<_>>()
 }
 
@@ -210,26 +205,23 @@ pub fn impl_get_len_base_10_as_usize_via_dividing_with_pows_of_2(ts: TokenStream
 
 /// The function assumes that the sum of lengths can't overflow
 // "if"-token tree
-unsafe fn get_if_ts_for_len_intvl(number_ident: &Ident2, l: &u8, r: &u8) -> TokenStream2 {
-    let diff = r-l;
+unsafe fn get_unsigned_if_ts_for_len_intvl(number_ident: &Ident2, l: &u8, r: &u8) -> TokenStream2 {
+    let diff = r - l;
     match diff {
         0 => TokenTree2::Literal(Literal2::u8_unsuffixed(*l)).into(),
         1 => {
             let l_val_lit = TokenTree2::Literal(Literal2::u128_unsuffixed(10u128.pow(*l as u32)));
-            let (l_len_lit, r_len_lit) = (
-                Literal2::u8_unsuffixed(*l),
-                Literal2::u8_unsuffixed(*r)
-            );
+            let (l_len_lit, r_len_lit) = (Literal2::u8_unsuffixed(*l), Literal2::u8_unsuffixed(*r));
             quote! { if #number_ident < #l_val_lit { #l_len_lit } else { #r_len_lit } }
-        },
+        }
         _ => {
             debug_assert!(*l < 100 && *r < 100);
             let mp_len = l.naive_midpoint(r);
             let mp_val_lit =
                 TokenTree2::Literal(Literal2::u128_unsuffixed(10u128.pow(mp_len as u32)));
             let (l_branch, r_branch) = (
-                get_if_ts_for_len_intvl(&number_ident, l, &mp_len),
-                get_if_ts_for_len_intvl(&number_ident, &(mp_len+1), r)
+                get_unsigned_if_ts_for_len_intvl(&number_ident, l, &mp_len),
+                get_unsigned_if_ts_for_len_intvl(&number_ident, &(mp_len + 1), r),
             );
             quote! {
                 if #number_ident < #mp_val_lit {
@@ -242,56 +234,131 @@ unsafe fn get_if_ts_for_len_intvl(number_ident: &Ident2, l: &u8, r: &u8) -> Toke
     }
 }
 
+#[cfg(any(doc, test, doctest, features = "const_trait_impl"))]
+fn wrap_in_impl_block(
+    trait_name: &Ident2,
+    type_token: &TokenTree2,
+    fn_ts: &TokenStream2,
+) -> TokenStream2 {
+    quote! {
+        impl const #trait_name for #type_token {
+            #fn_ts
+        }
+    }
+}
+
+#[cfg(not(any(doc, test, doctest, features = "const_trait_impl")))]
+fn wrap_in_impl_block(
+    trait_name: &Ident2,
+    type_token: &TokenTree2,
+    fn_ts: &TokenStream2,
+) -> TokenStream2 {
+    quote! {
+        impl #trait_name for #type_token {
+            #fn_ts
+        }
+    }
+}
+
 fn get_implementation_via_divide_and_conquer_approach_for_u_prim_ints(
     max_len_wo_sign: &u8,
-    type_token: &TokenTree2
+    type_token: &TokenTree2,
 ) -> TokenStream2 {
+    let trait_name = Ident2::new(
+        "GetLenBase10AsUsizeViaDivideAndConquerApproach",
+        Span2::call_site(),
+    );
     let number_ident = Ident2::new("number", Span2::call_site());
     debug_assert!(u128::MAX_LEN_BASE_10_AS_USIZE * 2 < 100);
-    let if_ts: TokenStream2 = unsafe {
-        get_if_ts_for_len_intvl(&number_ident, &1,&max_len_wo_sign)
-    };
+    let if_ts: TokenStream2 =
+        unsafe { get_unsigned_if_ts_for_len_intvl(&number_ident, &1, &max_len_wo_sign) };
 
-    let fn_body_ts: TokenStream2 = quote! {
+    let fn_ts: TokenStream2 = quote! {
         fn get_len_base_10_as_usize_via_divide_and_conquer_approach(&self) -> usize {
-            let number = *self;
+            let #number_ident = *self;
             #if_ts
         }
     };
 
-    #[cfg(any(doc, test, doctest, features = "const_trait_impl"))]
-    let ts: TokenStream2 = quote! {
-        impl const GetLenBase10AsUsizeViaDivideAndConquerApproach for #type_token {
-            #fn_body_ts
-        }
-    };
-    
-    #[cfg(not(any(doc, test, doctest, features = "const_trait_impl")))]
-    let ts: TokenStream2 = quote! {
-        impl GetLenBase10AsUsizeViaDivideAndConquerApproach for #type_token {
-            #fn_body_ts
-        }
-    };
+    wrap_in_impl_block(&trait_name, type_token, &fn_ts)
+}
 
-    TokenStream2::from(ts)
+unsafe fn get_signed_if_ts_for_len_intvl(neg_abs_ident: &Ident2, l: &u8, r: &u8) -> TokenStream2 {
+    let diff = r - l;
+    match diff {
+        0 => TokenTree2::Literal(Literal2::u8_unsuffixed(*l)).into(),
+        1 => {
+            let l_val_lit = TokenTree2::Literal(Literal2::i128_unsuffixed(-10i128.pow(*l as u32)));
+            let (l_len_lit, r_len_lit) = (Literal2::u8_unsuffixed(*l), Literal2::u8_unsuffixed(*r));
+            quote! { if #neg_abs_ident > #l_val_lit { #l_len_lit } else { #r_len_lit } }
+        }
+        _ => {
+            debug_assert!(*l < 100 && *r < 100);
+            let mp_len = l.naive_midpoint(r);
+            let mp_val_lit =
+                TokenTree2::Literal(Literal2::i128_unsuffixed(-10i128.pow(mp_len as u32)));
+            let (l_branch, r_branch) = (
+                get_signed_if_ts_for_len_intvl(&neg_abs_ident, l, &mp_len),
+                get_signed_if_ts_for_len_intvl(&neg_abs_ident, &(mp_len + 1), r),
+            );
+            quote! {
+                if #neg_abs_ident > #mp_val_lit {
+                    #l_branch
+                } else {
+                    #r_branch
+                }
+            }
+        }
+    }
+}
+
+fn get_implementation_via_divide_and_conquer_approach_for_s_prim_ints(
+    max_len_wo_sign: &u8,
+    type_token: &TokenTree2,
+) -> TokenStream2 {
+    let trait_name = Ident2::new(
+        "GetLenBase10AsUsizeViaDivideAndConquerApproach",
+        Span2::call_site(),
+    );
+    let neg_abs_ident = Ident2::new("neg_abs", Span2::call_site());
+    debug_assert!(i128::MAX_LEN_BASE_10_AS_USIZE * 2 < 100);
+    let if_ts = unsafe { get_signed_if_ts_for_len_intvl(&neg_abs_ident, &1, &max_len_wo_sign) };
+    let fn_ts: TokenStream2 = quote! {
+        fn get_len_base_10_as_usize_via_divide_and_conquer_approach(&self) -> usize {
+            let maybe_minus_length = if *self < 0 { 1 } else { 0 };
+            let #neg_abs_ident = self.wrapping_abs().wrapping_neg();
+            maybe_minus_length + #if_ts
+        }
+    };
+    wrap_in_impl_block(&trait_name, type_token, &fn_ts)
 }
 
 #[proc_macro]
-pub fn impl_get_len_base_10_as_usize_via_divide_and_conquer_approach(ts: TokenStream) -> TokenStream {
+pub fn impl_get_len_base_10_as_usize_via_divide_and_conquer_approach(
+    ts: TokenStream,
+) -> TokenStream {
     let ts = proc_macro2::TokenStream::from(ts);
     let type_name = ts.clone().to_string();
-    let (is_signed, max_len_wo_sign) =
-        get_is_signed_and_max_len_wo_sign!(type_name in @PRIM_INTS)
-        .apply(&mut |(is_signed, max_len_wo_sign): (bool, usize)| (
-            is_signed,
-            // Length of all primitive integers will fit into u8
-            max_len_wo_sign as u8
-        )
-    );
+    let (is_signed, max_len_wo_sign) = get_is_signed_and_max_len_wo_sign!(type_name in @PRIM_INTS)
+        .apply(&mut |(is_signed, max_len_wo_sign): (bool, usize)| {
+            (
+                is_signed,
+                // Length of all primitive integers will fit into u8
+                max_len_wo_sign as u8,
+            )
+        });
     let type_token: TokenTree2 = ts.into_iter().next().unwrap().into();
     if is_signed {
-        unimplemented!();
+        get_implementation_via_divide_and_conquer_approach_for_s_prim_ints(
+            &max_len_wo_sign,
+            &type_token,
+        )
+        .into()
     } else {
-        get_implementation_via_divide_and_conquer_approach_for_u_prim_ints(&max_len_wo_sign, &type_token).into()
+        get_implementation_via_divide_and_conquer_approach_for_u_prim_ints(
+            &max_len_wo_sign,
+            &type_token,
+        )
+        .into()
     }
 }
